@@ -170,9 +170,6 @@ async function getVideoDetails(videoId) {
 
     const channelInfo = await getChannelInfo(item.snippet.channelId);
     
-    // Extract music information from description
-    const musicInfo = extractMusicInfo(item.snippet.description);
-    
     return {
         videoId,
         title: item.snippet.title,
@@ -185,69 +182,8 @@ async function getVideoDetails(videoId) {
         isVerified: channelInfo.isVerified,
         likes: parseInt(item.statistics?.likeCount || 0),
         comments: parseInt(item.statistics?.commentCount || 0),
-        music: musicInfo,
         isAI: true,
         timestamp: admin.firestore.FieldValue.serverTimestamp()
-    };
-}
-
-function extractMusicInfo(description) {
-    // Patterns to detect music information
-    const patterns = [
-        /Music in this video[\s\S]*?Learn more[\s\S]*?Song\s*(.*?)\s*Artist\s*(.*?)\s*Licensed to YouTube by/i,
-        /🎵 Music[\s:]*([^\n]*)/i,
-        /Track:?\s*(.*?)\s*by\s*(.*?)(?:\n|$)/i,
-        /Song:?\s*(.*?)(?:\n|$)/i,
-        /Sound:?\s*(.*?)(?:\n|$)/i,
-        /Original sound - (.*)/i
-    ];
-
-    for (const pattern of patterns) {
-        const match = description.match(pattern);
-        if (match) {
-            if (match[1] && match[2]) {
-                return {
-                    type: 'youtube_music',
-                    song: match[1].trim(),
-                    artist: match[2].trim(),
-                    isOriginal: false
-                };
-            } else if (match[1]) {
-                return {
-                    type: match[0].includes('Original sound') ? 'original_sound' : 'unknown_music',
-                    song: match[1].trim(),
-                    artist: null,
-                    isOriginal: match[0].includes('Original sound')
-                };
-            }
-        }
-    }
-
-    // Check for common music tags
-    if (description.includes('epidemicsound') || description.includes('Epidemic Sound')) {
-        return {
-            type: 'epidemic_sound',
-            song: null,
-            artist: null,
-            isOriginal: false
-        };
-    }
-
-    if (description.includes('No copyright music') || description.includes('NCS')) {
-        return {
-            type: 'no_copyright_sound',
-            song: null,
-            artist: null,
-            isOriginal: false
-        };
-    }
-
-    // Default to original sound if no music info found
-    return {
-        type: 'original_sound',
-        song: null,
-        artist: null,
-        isOriginal: true
     };
 }
 
